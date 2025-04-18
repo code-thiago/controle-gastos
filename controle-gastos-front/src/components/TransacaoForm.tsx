@@ -1,150 +1,139 @@
-// src/components/TransacaoForm.tsx
-"use client";
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+'use client';
 
-type Transacao = {
-  id: number;
-  pessoaId: number;
-  tipo: "receita" | "despesa";
-  valor: number;
-  descricao: string;
-};
+import { useEffect, useState } from 'react';
+import axios from 'axios';
 
-type Pessoa = {
+interface Pessoa {
   id: number;
   nome: string;
-};
+}
+
+interface Transacao {
+  id: number;
+  descricao: string;
+  valor: number;
+  tipo: 'receita' | 'despesa';
+  pessoaId: number;
+}
 
 interface Props {
   onAtualizar: () => void;
 }
 
 export default function TransacaoForm({ onAtualizar }: Props) {
+  const [descricao, setDescricao] = useState('');
+  const [valor, setValor] = useState(0);
+  const [tipo, setTipo] = useState<'receita' | 'despesa'>('receita');
+  const [pessoaId, setPessoaId] = useState(0);
   const [pessoas, setPessoas] = useState<Pessoa[]>([]);
-  const [pessoaId, setPessoaId] = useState<number>(0);
-  const [tipo, setTipo] = useState<"receita" | "despesa">("despesa");
-  const [valor, setValor] = useState<number>(0);
-  const [descricao, setDescricao] = useState<string>("");
-  const [mensagem, setMensagem] = useState<string | null>(null);
-
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
-  const [editando, setEditando] = useState<Transacao | null>(null);
+  const [editandoId, setEditandoId] = useState<number | null>(null);
+
+  const carregarDados = async () => {
+    const pessoasRes = await axios.get('http://localhost:5275/api/pessoas');
+    setPessoas(pessoasRes.data);
+    const transacoesRes = await axios.get('http://localhost:5275/api/transacoes');
+    setTransacoes(transacoesRes.data);
+  };
 
   useEffect(() => {
-    axios.get("http://localhost:5275/api/pessoas").then(res => setPessoas(res.data));
-    axios.get("http://localhost:5275/api/transacoes").then(res => setTransacoes(res.data));
+    carregarDados();
   }, []);
 
-  const carregarTransacoes = () => {
-    axios.get("http://localhost:5275/api/transacoes").then(res => setTransacoes(res.data));
+  const limparFormulario = () => {
+    setDescricao('');
+    setValor(0);
+    setTipo('receita');
+    setPessoaId(0);
+    setEditandoId(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (valor <= 0) {
-      setMensagem("O valor deve ser maior que 0.");
-      return;
+    if (editandoId !== null) {
+      await axios.put(`http://localhost:5275/api/transacoes/${editandoId}`, {
+        id: editandoId,
+        descricao,
+        valor,
+        tipo,
+        pessoaId,
+      });
+    } else {
+      await axios.post('http://localhost:5275/api/transacoes', {
+        descricao,
+        valor,
+        tipo,
+        pessoaId,
+      });
     }
 
-    const payload = { pessoaId, tipo, valor, descricao };
-
-    try {
-      if (editando) {
-        await axios.put(`http://localhost:5275/api/transacoes/${editando.id}`, payload);
-        setMensagem("Transação atualizada com sucesso.");
-      } else {
-        const res = await axios.post("http://localhost:5275/api/transacoes", payload);
-        setMensagem("Transação registrada com sucesso.");
-      }
-
-      setPessoaId(0);
-      setTipo("despesa");
-      setValor(0);
-      setDescricao("");
-      setEditando(null);
-      carregarTransacoes();
-      onAtualizar();
-    } catch (err: any) {
-      setMensagem(err.response?.data || "Erro ao registrar transação.");
-    }
+    await carregarDados();
+    limparFormulario();
+    onAtualizar();
   };
 
   const handleEditar = (transacao: Transacao) => {
-    setEditando(transacao);
-    setPessoaId(transacao.pessoaId);
-    setTipo(transacao.tipo);
-    setValor(transacao.valor);
+    setEditandoId(transacao.id);
     setDescricao(transacao.descricao);
-    setMensagem(null);
+    setValor(transacao.valor);
+    setTipo(transacao.tipo);
+    setPessoaId(transacao.pessoaId);
   };
 
-  const handleRemover = async (id: number) => {
-    if (confirm("Tem certeza que deseja remover esta transação?")) {
-      await axios.delete(`http://localhost:5275/api/transacoes/${id}`);
-      setMensagem("Transação removida.");
-      carregarTransacoes();
-      onAtualizar();
-    }
+  const handleExcluir = async (id: number) => {
+    await axios.delete(`http://localhost:5275/api/transacoes/${id}`);
+    await carregarDados();
+    onAtualizar();
   };
 
   return (
     <div>
-      <h2>{editando ? "Editar Transação" : "Nova Transação"}</h2>
-
-      {mensagem && <p style={{ color: "red" }}>{mensagem}</p>}
-
+      <h2>{editandoId ? 'Editar Transação' : 'Cadastrar Transação'}</h2>
       <form onSubmit={handleSubmit}>
-        <label>Pessoa:</label>
-        <select value={pessoaId} onChange={e => setPessoaId(Number(e.target.value))} required>
-          <option value={0}>Selecione</option>
-          {pessoas.map(p => (
-            <option key={p.id} value={p.id}>{p.nome}</option>
-          ))}
-        </select>
-
-        <label>Tipo:</label>
-        <select value={tipo} onChange={e => setTipo(e.target.value as "receita" | "despesa")}>
-          <option value="despesa">Despesa</option>
-          <option value="receita">Receita</option>
-        </select>
-
-        <label>Valor:</label>
-        <input
-          type="number"
-          value={isNaN(valor) ? "" : valor}
-          onChange={e => setValor(parseFloat(e.target.value))}
-          required
-        />
-
         <label>Descrição:</label>
         <input
           type="text"
           value={descricao}
-          onChange={e => setDescricao(e.target.value)}
+          onChange={(e) => setDescricao(e.target.value)}
           required
         />
-
-        <button type="submit">{editando ? "Salvar" : "Adicionar"}</button>
-        {editando && (
-          <button type="button" onClick={() => {
-            setEditando(null);
-            setPessoaId(0);
-            setTipo("despesa");
-            setValor(0);
-            setDescricao("");
-          }}>Cancelar</button>
+        <label>Valor:</label>
+        <input
+          type="number"
+          value={valor}
+          onChange={(e) => setValor(Number(e.target.value))}
+          required
+        />
+        <label>Tipo:</label>
+        <select value={tipo} onChange={(e) => setTipo(e.target.value as any)}>
+          <option value="receita">Receita</option>
+          <option value="despesa">Despesa</option>
+        </select>
+        <label>Pessoa:</label>
+        <select value={pessoaId} onChange={(e) => setPessoaId(Number(e.target.value))}>
+          <option value={0}>Selecione</option>
+          {pessoas.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.nome}
+            </option>
+          ))}
+        </select>
+        <button type="submit">{editandoId ? 'Salvar' : 'Cadastrar'}</button>
+        {editandoId && (
+          <button type="button" onClick={limparFormulario}>
+            Cancelar
+          </button>
         )}
       </form>
 
-      <h3>Transações</h3>
+      <h3>Transações Cadastradas</h3>
       <ul>
-        {transacoes.map(t => (
+        {transacoes.map((t) => (
           <li key={t.id}>
-            {pessoas.find(p => p.id === t.pessoaId)?.nome || "Desconhecido"} - {t.tipo} - R$ {t.valor.toFixed(2)} - {t.descricao}
+            {t.descricao} - R$ {t.valor.toFixed(2)} ({t.tipo}) - Pessoa ID: {t.pessoaId}
             <button onClick={() => handleEditar(t)}>Editar</button>
-            <button onClick={() => handleRemover(t.id)}>Remover</button>
+            <button onClick={() => handleExcluir(t.id)}>Excluir</button>
           </li>
         ))}
       </ul>

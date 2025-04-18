@@ -1,9 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import PessoaForm from '@/components/PessoaForm';
 import TransacaoForm from '@/components/TransacaoForm';
 import Totais from '@/components/Totais';
-import { useState } from 'react';
+import ResumoTransacoes from '@/components/ResumoTransacoes';
 
 export default function Home() {
   const [atualizar, setAtualizar] = useState(false);
@@ -13,10 +14,16 @@ export default function Home() {
   };
 
   return (
-    <main>
-      <PessoaForm onAtualizar={forcarAtualizacao} />
-      <TransacaoForm onAtualizar={forcarAtualizacao} />
+    <div className="container">
+      <h1>Controle de Gastos Residenciais</h1>
+
+      <div className="formularios">
+        <PessoaForm onAtualizar={forcarAtualizacao} />
+        <TransacaoForm onAtualizar={forcarAtualizacao} />
+      </div>
+
       <Totais atualizar={atualizar} />
-    </main>
+      <ResumoTransacoes atualizar={atualizar} />
+    </div>
   );
 }

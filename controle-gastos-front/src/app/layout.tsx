@@ -1,3 +1,5 @@
+import './globals.css';
+
 export const metadata = {
   title: 'Controle de Gastos',
   description: 'Sistema de controle de despesas',

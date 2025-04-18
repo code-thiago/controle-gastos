@@ -8,14 +8,14 @@ namespace ControleGastosAPI.Controllers;
 [Route("api/transacoes")]
 public class TransacaoController : ControllerBase
 {
-    // ✅ Lista todas as transações
+    // Lista todas as transações
     [HttpGet]
     public IActionResult Listar()
     {
         return Ok(Dados.Transacoes);
     }
 
-    // ✅ Cria uma nova transação (com validações)
+    // Cria uma nova transação (com validações)
     [HttpPost]
     public IActionResult Criar(Transacao transacao)
     {
@@ -24,14 +24,14 @@ public class TransacaoController : ControllerBase
             return BadRequest("Pessoa não encontrada.");
 
         if (pessoa.Idade < 18 && transacao.Tipo.ToLower() == "receita")
-            return BadRequest("Menores de idade só podem ter despesas.");
+            return BadRequest("Menores de idade só podem registrar despesas.");
 
         transacao.Id = Dados.ProximoIdTransacao++;
         Dados.Transacoes.Add(transacao);
         return Ok(transacao);
     }
 
-    // ✅ Atualiza uma transação existente
+    // Edita uma transação existente
     [HttpPut("{id}")]
     public IActionResult Atualizar(int id, Transacao transacaoAtualizada)
     {
@@ -39,27 +39,34 @@ public class TransacaoController : ControllerBase
         if (transacao == null)
             return NotFound("Transação não encontrada.");
 
-        transacao.PessoaId = transacaoAtualizada.PessoaId;
-        transacao.Tipo = transacaoAtualizada.Tipo;
-        transacao.Valor = transacaoAtualizada.Valor;
+        var pessoa = Dados.Pessoas.FirstOrDefault(p => p.Id == transacaoAtualizada.PessoaId);
+        if (pessoa == null)
+            return BadRequest("Pessoa não encontrada.");
+
+        if (pessoa.Idade < 18 && transacaoAtualizada.Tipo.ToLower() == "receita")
+            return BadRequest("Menores de idade só podem registrar despesas.");
+
         transacao.Descricao = transacaoAtualizada.Descricao;
+        transacao.Valor = transacaoAtualizada.Valor;
+        transacao.Tipo = transacaoAtualizada.Tipo;
+        transacao.PessoaId = transacaoAtualizada.PessoaId;
 
         return Ok(transacao);
     }
 
-    // ✅ Remove uma transação por ID
+    // Exclui uma transação
     [HttpDelete("{id}")]
-    public IActionResult Remover(int id)
+    public IActionResult Deletar(int id)
     {
         var transacao = Dados.Transacoes.FirstOrDefault(t => t.Id == id);
         if (transacao == null)
-            return NotFound("Transação não encontrada.");
+            return NotFound();
 
         Dados.Transacoes.Remove(transacao);
         return NoContent();
     }
 
-    // ✅ Retorna totais por pessoa e totais gerais
+    // Retorna totais por pessoa e totais gerais
     [HttpGet("totais")]
     public IActionResult ObterTotais()
     {
@@ -84,14 +91,12 @@ public class TransacaoController : ControllerBase
         var despesaTotal = totaisPorPessoa.Sum(p => p.despesa);
         var saldoTotal = receitaTotal - despesaTotal;
 
-        var resultado = new
+        return Ok(new
         {
             totaisPorPessoa,
             receitaTotal,
             despesaTotal,
             saldoTotal
-        };
-
-        return Ok(resultado);
+        });
     }
 }
