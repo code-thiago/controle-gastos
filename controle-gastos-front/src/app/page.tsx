@@ -1,16 +1,22 @@
-import PessoaForm from '../components/PessoaForm';
-import TransacaoForm from '../components/TransacaoForm';
-import Totais from '../components/Totais';
+'use client';
+
+import PessoaForm from '@/components/PessoaForm';
+import TransacaoForm from '@/components/TransacaoForm';
+import Totais from '@/components/Totais';
+import { useState } from 'react';
 
 export default function Home() {
+  const [atualizar, setAtualizar] = useState(false);
+
+  const forcarAtualizacao = () => {
+    setAtualizar(prev => !prev);
+  };
+
   return (
-    <main style={{ padding: '2rem' }}>
-      <h1>Controle de Gastos</h1>
-      <PessoaForm />
-      <hr />
-      <TransacaoForm />
-      <hr />
-      <Totais />
+    <main>
+      <PessoaForm onAtualizar={forcarAtualizacao} />
+      <TransacaoForm onAtualizar={forcarAtualizacao} />
+      <Totais atualizar={atualizar} />
     </main>
   );
 }
