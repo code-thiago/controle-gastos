@@ -31,6 +31,34 @@ public class TransacaoController : ControllerBase
         return Ok(transacao);
     }
 
+    // ✅ Atualiza uma transação existente
+    [HttpPut("{id}")]
+    public IActionResult Atualizar(int id, Transacao transacaoAtualizada)
+    {
+        var transacao = Dados.Transacoes.FirstOrDefault(t => t.Id == id);
+        if (transacao == null)
+            return NotFound("Transação não encontrada.");
+
+        transacao.PessoaId = transacaoAtualizada.PessoaId;
+        transacao.Tipo = transacaoAtualizada.Tipo;
+        transacao.Valor = transacaoAtualizada.Valor;
+        transacao.Descricao = transacaoAtualizada.Descricao;
+
+        return Ok(transacao);
+    }
+
+    // ✅ Remove uma transação por ID
+    [HttpDelete("{id}")]
+    public IActionResult Remover(int id)
+    {
+        var transacao = Dados.Transacoes.FirstOrDefault(t => t.Id == id);
+        if (transacao == null)
+            return NotFound("Transação não encontrada.");
+
+        Dados.Transacoes.Remove(transacao);
+        return NoContent();
+    }
+
     // ✅ Retorna totais por pessoa e totais gerais
     [HttpGet("totais")]
     public IActionResult ObterTotais()
